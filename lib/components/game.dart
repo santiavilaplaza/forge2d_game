@@ -8,6 +8,7 @@ import 'package:flame_kenney_xml/flame_kenney_xml.dart';
 import 'background.dart';
 import 'brick.dart';
 import 'ground.dart';
+import 'player.dart';
 
 class MyPhysicsGame extends Forge2DGame {
   MyPhysicsGame()
@@ -45,6 +46,7 @@ class MyPhysicsGame extends Forge2DGame {
     await world.add(Background(sprite: Sprite(backgroundImage)));
     await addGround();
     unawaited(addBricks());
+    await addPlayer();
 
     return super.onLoad();
   }
@@ -87,4 +89,19 @@ class MyPhysicsGame extends Forge2DGame {
       await Future<void>.delayed(const Duration(milliseconds: 500));
     }
   }
+
+  Future<void> addPlayer() async => world.add(
+        Player(
+          Vector2(camera.visibleWorldRect.left * 2 / 3, 0),
+          aliens.getSprite(PlayerColor.randomColor.fileName),
+        ),
+      );
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (isMounted && world.children.whereType<Player>().isEmpty) {
+      addPlayer();
+    }
+  }            
 }
