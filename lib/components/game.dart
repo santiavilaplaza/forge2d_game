@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flame_kenney_xml/flame_kenney_xml.dart';
 
 import 'background.dart';
+import 'brick.dart';
 import 'ground.dart';
 
 class MyPhysicsGame extends Forge2DGame {
@@ -42,6 +44,7 @@ class MyPhysicsGame extends Forge2DGame {
 
     await world.add(Background(sprite: Sprite(backgroundImage)));
     await addGround();
+    unawaited(addBricks());
 
     return super.onLoad();
   }
@@ -56,5 +59,32 @@ class MyPhysicsGame extends Forge2DGame {
           tiles.getSprite('grass.png'),
         ),
     ]);
+  }
+
+  final _random = Random();
+
+  Future<void> addBricks() async {
+    for (var i = 0; i < 5; i++) {
+      final type = BrickType.randomType;
+      final size = BrickSize.randomSize;
+      await world.add(
+        Brick(
+          type: type,
+          size: size,
+          damage: BrickDamage.some,
+          position: Vector2(
+              camera.visibleWorldRect.right / 3 +
+                  (_random.nextDouble() * 5 - 2.5),
+              0),
+          sprites: brickFileNames(type, size).map(
+            (key, filename) => MapEntry(
+              key,
+              elements.getSprite(filename),
+            ),
+          ),
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
   }
 }
