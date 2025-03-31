@@ -4,12 +4,12 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flame_kenney_xml/flame_kenney_xml.dart';
-import 'package:flutter/material.dart'; 
+import 'package:flutter/material.dart';
 
 import 'background.dart';
-import 'brick.dart';
 import 'enemy.dart';
 import 'ground.dart';
+import 'brick.dart';
 import 'player.dart';
 
 class MyPhysicsGame extends Forge2DGame {
@@ -22,10 +22,36 @@ class MyPhysicsGame extends Forge2DGame {
   late final XmlSpriteSheet aliens;
   late final XmlSpriteSheet elements;
   late final XmlSpriteSheet tiles;
+  var backgroundImagePng = "";
+  var groundImagePng = "";
+
+  void createWorld() {
+    int randomNumber = _random.nextInt(2);
+    
+    switch (randomNumber) {
+      case 0:
+        backgroundImagePng = 'colored_shroom.png';
+        groundImagePng = 'dirt.png';
+        break;
+      case 1:
+        backgroundImagePng = 'colored_grass.png';
+        groundImagePng = 'grass.png';
+        break;
+      case 2:
+        backgroundImagePng = 'colored_desert.png';
+        groundImagePng = 'sand.png';
+        break;
+      default:
+        backgroundImagePng = 'colored_shroom.png';
+        groundImagePng = 'dirt.png';
+    }
+  }
 
   @override
   FutureOr<void> onLoad() async {
-    final backgroundImage = await images.load('colored_grass.png');
+    createWorld();
+
+    final backgroundImage = await images.load(backgroundImagePng);
     final spriteSheets = await Future.wait([
       XmlSpriteSheet.load(
         imagePath: 'spritesheet_aliens.png',
@@ -47,7 +73,7 @@ class MyPhysicsGame extends Forge2DGame {
 
     await world.add(Background(sprite: Sprite(backgroundImage)));
     await addGround();
-    unawaited(addBricks().then((_) => addEnemies()));
+    unawaited(addEnemies().then((_) => addBricks()));
     await addPlayer();
 
     return super.onLoad();
@@ -60,7 +86,7 @@ class MyPhysicsGame extends Forge2DGame {
           x += groundSize)
         Ground(
           Vector2(x, (camera.visibleWorldRect.height - groundSize) / 2),
-          tiles.getSprite('grass.png'),
+          tiles.getSprite(groundImagePng),
         ),
     ]);
   }
@@ -68,7 +94,7 @@ class MyPhysicsGame extends Forge2DGame {
   final _random = Random();
 
   Future<void> addBricks() async {
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < 3; i++) {
       final type = BrickType.randomType;
       final size = BrickSize.randomSize;
       await world.add(
@@ -102,26 +128,47 @@ class MyPhysicsGame extends Forge2DGame {
   @override
   void update(double dt) {
     super.update(dt);
-    if (isMounted && 
-      world.children.whereType<Player>().isEmpty &&
-      world.children.whereType<Enemy>().isNotEmpty) {
+
+    for (final enemy in world.children.whereType<Enemy>()) {
+      if (enemy.position.y > camera.visibleWorldRect.bottom) {
+        enemy.removeFromParent();
+      }
+    }
+
+    for (final brick in world.children.whereType<Brick>()) {
+      if (brick.position.y > camera.visibleWorldRect.bottom) {
+        brick.removeFromParent();
+      }
+    }
+
+    if (isMounted &&
+        world.children.whereType<Player>().isEmpty &&
+        (world.children.whereType<Brick>().isNotEmpty ||
+            world.children.whereType<Enemy>().isNotEmpty)) {
       addPlayer();
     }
     if (isMounted &&
         enemiesFullyAdded &&
         world.children.whereType<Enemy>().isEmpty &&
+        world.children.whereType<Brick>().isEmpty &&
         world.children.whereType<TextComponent>().isEmpty) {
       world.addAll(
         [
-          (position: Vector2(0.5, 0.5), color: Colors.white),
-          (position: Vector2.zero(), color: Colors.orangeAccent),
+          (
+            position: Vector2(0.5, 0.5),
+            color: const Color.fromARGB(255, 114, 210, 140)
+          ),
+          (
+            position: Vector2.zero(),
+            color: const Color.fromARGB(255, 22, 170, 61)
+          ),
         ].map(
           (e) => TextComponent(
-            text: 'You win!',
+            text: 'Has Ganado!',
             anchor: Anchor.center,
             position: e.position,
             textRenderer: TextPaint(
-              style: TextStyle(color: e.color, fontSize: 16),
+              style: TextStyle(color: e.color, fontSize: 12),
             ),
           ),
         ),
@@ -133,7 +180,7 @@ class MyPhysicsGame extends Forge2DGame {
 
   Future<void> addEnemies() async {
     await Future<void>.delayed(const Duration(seconds: 2));
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 2; i++) {
       await world.add(
         Enemy(
           Vector2(
@@ -145,6 +192,7 @@ class MyPhysicsGame extends Forge2DGame {
       );
       await Future<void>.delayed(const Duration(seconds: 1));
     }
-    enemiesFullyAdded = true;                              // To here.
+    enemiesFullyAdded = true;
+    print("enemies fully added: $enemiesFullyAdded");
   }
 }

@@ -10,9 +10,7 @@ const playerSize = 5.0;
 
 enum PlayerColor {
   pink,
-  blue,
-  green,
-  yellow;
+  blue;
 
   static PlayerColor get randomColor =>
       PlayerColor.values[Random().nextInt(PlayerColor.values.length)];
@@ -42,7 +40,7 @@ class Player extends BodyComponent with DragCallbacks {
   final Sprite _sprite;
 
   @override
-  Future<void> onLoad() {
+  Future<void> onLoad() async {
     addAll([
       CustomPainterComponent(
         painter: _DragPainter(this),
